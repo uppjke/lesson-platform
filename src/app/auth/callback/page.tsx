@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, createUserProfile } from '@/lib/supabase';
 
-export default function AuthCallback() {
+function AuthCallbackComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -13,7 +13,7 @@ export default function AuthCallback() {
       try {
         // Получаем текущего пользователя
         const { data: { user }, error } = await supabase.auth.getUser();
-        
+
         if (error) {
           console.error('Ошибка аутентификации:', error);
           router.push('/signup?error=auth_error');
@@ -23,7 +23,7 @@ export default function AuthCallback() {
         if (user) {
           // Получаем роль из параметров URL
           const role = searchParams.get('role') as 'student' | 'teacher' || 'student';
-          
+
           // Пытаемся создать профиль пользователя (если он еще не существует)
           const { error: profileError } = await createUserProfile(
             user.id,
@@ -85,5 +85,17 @@ export default function AuthCallback() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <AuthCallbackComponent />
+    </Suspense>
   );
 }

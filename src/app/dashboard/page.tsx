@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import { supabase, getUserProfile, UserProfile } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { User } from '@supabase/supabase-js';
+import Link from 'next/link';
 
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -14,7 +16,7 @@ export default function Dashboard() {
     const getProfile = async () => {
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
+
         if (userError || !user) {
           router.push('/signup');
           return;
@@ -23,7 +25,7 @@ export default function Dashboard() {
         setUser(user);
 
         const { data: profileData, error: profileError } = await getUserProfile(user.id);
-        
+
         if (profileError) {
           console.error('Ошибка получения профиля:', profileError);
         } else {
@@ -40,7 +42,7 @@ export default function Dashboard() {
 
     // Подписка на изменения аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event) => {
         if (event === 'SIGNED_OUT') {
           router.push('/signup');
         }
@@ -69,10 +71,18 @@ export default function Dashboard() {
       <nav className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">
-                Платформа уроков
-              </h1>
+            <div className="flex items-center space-x-8">
+              <Link href="/" className="text-xl font-semibold text-gray-900">
+                📚 Платформа уроков
+              </Link>
+              <div className="hidden md:flex space-x-8">
+                <Link href="/dashboard" className="text-blue-600 font-medium">
+                  Панель управления
+                </Link>
+                <Link href="/lessons" className="text-gray-600 hover:text-gray-900">
+                  Уроки
+                </Link>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">
@@ -97,7 +107,7 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
                 Добро пожаловать{profile?.role === 'teacher' ? ', преподаватель' : ', студент'}!
               </h2>
-              
+
               {profile && (
                 <div className="bg-white rounded-lg shadow p-6 mb-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">

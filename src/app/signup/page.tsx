@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase, createUserProfile } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
@@ -18,7 +18,7 @@ export default function SignupPage() {
       setError(null);
 
       // Отправляем Magic Link для авторизации (fallback для Passkey)
-      const { data, error: signInError } = await supabase.auth.signInWithOtp({
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
           // Редирект после подтверждения email
@@ -36,8 +36,9 @@ export default function SignupPage() {
       // Показываем сообщение об отправке письма
       alert('Проверьте вашу почту! Мы отправили вам ссылку для входа.');
       router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Произошла ошибка при регистрации');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Произошла ошибка при регистрации';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -45,7 +46,7 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       setError('Введите email');
       return;
