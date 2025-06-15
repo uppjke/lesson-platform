@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Платформа уроков
 
-## Getting Started
+Полнофункциональная платформа для проведения онлайн уроков с использованием Next.js 15, Supabase и LiveKit.
 
-First, run the development server:
+## 🚀 Технологии
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
+- **Next.js 15** с App Router и TypeScript
+- **Tailwind CSS v4** с дизайн-токенами
+- **Supabase** для аутентификации и базы данных
+- **LiveKit 1.9** для WebRTC видеосвязи
+- **pnpm** как пакетный менеджер
+
+## 📋 Функции
+
+- ✅ Регистрация и аутентификация пользователей
+- ✅ Роли: студент/преподаватель
+- ✅ Passkey поддержка с Magic Link fallback
+- ✅ Дизайн-токены в /styles/design-tokens.css
+- ✅ Респонсивный дизайн с Tailwind CSS
+- 🚧 LiveKit интеграция для видео уроков (в разработке)
+
+## 🛠 Настройка проекта
+
+### 1. Установка зависимостей
+
+\`\`\`bash
+pnpm install
+\`\`\`
+
+### 2. Настройка Supabase
+
+1. Создайте проект в [Supabase](https://supabase.com)
+2. Выполните SQL из файла \`supabase/setup.sql\` в SQL Editor вашего проекта
+3. Скопируйте \`.env.example\` в \`.env.local\` и заполните переменные:
+
+\`\`\`env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+\`\`\`
+
+### 3. Настройка LiveKit (опционально)
+
+1. Зарегистрируйтесь в [LiveKit Cloud](https://livekit.io)
+2. Добавьте переменные в \`.env.local\`:
+
+\`\`\`env
+NEXT_PUBLIC_LIVEKIT_URL=wss://your-livekit-url
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+\`\`\`
+
+### 4. Запуск проекта
+
+\`\`\`bash
 pnpm dev
-# or
-bun dev
-```
+\`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000) в браузере.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Структура проекта
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+\`\`\`
+src/
+├── app/                    # App Router страницы
+│   ├── auth/
+│   │   └── callback/      # Callback для аутентификации
+│   ├── dashboard/         # Главная страница после входа
+│   ├── signup/            # Страница регистрации
+│   ├── globals.css        # Глобальные стили
+│   └── page.tsx           # Главная страница (редирект)
+├── lib/
+│   └── supabase.ts        # Конфигурация Supabase
+styles/
+└── design-tokens.css      # Дизайн-токены
+supabase/
+└── setup.sql              # SQL для настройки БД
+\`\`\`
 
-## Learn More
+## 🎨 Дизайн-токены
 
-To learn more about Next.js, take a look at the following resources:
+Все дизайн-токены определены в \`/styles/design-tokens.css\` и используются через CSS переменные:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Цвета**: \`--color-primary\`, \`--color-success\`, etc.
+- **Типографика**: \`--font-size-*\`
+- **Отступы**: \`--spacing-*\`
+- **Радиусы**: \`--radius-*\`
+- **Тени**: \`--shadow-*\`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 👥 Роли пользователей
 
-## Deploy on Vercel
+### Студент
+- Регистрация с ролью "студент"
+- Просмотр доступных уроков
+- Участие в уроках
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Преподаватель
+- Регистрация с ролью "преподаватель"
+- Создание и управление уроками
+- Проведение видео уроков
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔐 Аутентификация
+
+Используется Supabase Auth с поддержкой:
+- Magic Link (основной метод)
+- Email + OTP
+- Fallback для Passkey (готов к реализации)
+
+## 📝 Разработка
+
+### Команды
+
+\`\`\`bash
+pnpm dev          # Запуск в режиме разработки
+pnpm build        # Сборка для продакшена
+pnpm start        # Запуск продакшен сборки
+pnpm lint         # Проверка линтером
+\`\`\`
+
+### Добавление новых токенов
+
+1. Добавьте CSS переменную в \`styles/design-tokens.css\`
+2. Обновите \`tailwind.config.js\` для использования через \`@theme\`
+3. Импортируйте в \`globals.css\`
+
+## 🚀 Деплой
+
+Проект готов к деплою на Vercel:
+
+1. Подключите GitHub репозиторий к Vercel
+2. Добавьте переменные окружения в настройках проекта
+3. Деплойте!
+
+## 📄 Лицензия
+
+MIT
