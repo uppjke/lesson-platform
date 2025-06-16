@@ -69,15 +69,6 @@ export default function Dashboard() {
     }
   }, [user, authLoading, router]);
 
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.push('/');
-    } catch (error) {
-      console.error('Ошибка выхода:', error);
-    }
-  };
-
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -106,33 +97,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Навигация */}
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-xl font-semibold text-gray-900">
-                📚 LessonPlatform
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">
-                {profile.full_name || profile.email}
-              </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {profile.role === 'teacher' ? 'Преподаватель' : 'Студент'}
-              </span>
-              <button
-                onClick={handleSignOut}
-                className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Выйти
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Основной контент */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
