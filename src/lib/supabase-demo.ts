@@ -1,7 +1,7 @@
 // Демо-клиент Supabase для разработки
 export const mockSupabaseClient = {
-  auth: {
-    async signInWithOtp(options: { email: string; options?: Record<string, unknown> }) {
+    auth: {
+        async signInWithOtp(options: { email: string; options?: Record<string, unknown> }) {
             console.log('🎭 ДЕМО: Симуляция signInWithOtp');
             console.log('📧 Email:', options.email);
             console.log('⚙️ Options:', options.options);
@@ -55,18 +55,18 @@ export const mockSupabaseClient = {
         }
     },
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  from: (_table: string) => {
-    // В демо режиме игнорируем table параметр  
-    return {
-        select: () => ({
-            limit: () => Promise.resolve({ data: [], error: null })
-        }),
-        insert: () => Promise.resolve({ data: null, error: null }),
-        update: () => Promise.resolve({ data: null, error: null }),
-        delete: () => Promise.resolve({ data: null, error: null })
-    };
-  }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    from: (_table: string) => {
+        // В демо режиме игнорируем table параметр  
+        return {
+            select: () => ({
+                limit: () => Promise.resolve({ data: [], error: null })
+            }),
+            insert: () => Promise.resolve({ data: null, error: null }),
+            update: () => Promise.resolve({ data: null, error: null }),
+            delete: () => Promise.resolve({ data: null, error: null })
+        };
+    }
 };
 
 // Простое управление сессией для демо
