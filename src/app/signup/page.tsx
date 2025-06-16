@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { mockSupabaseClient } from '@/lib/supabase-demo';
 import { useRouter } from 'next/navigation';
 
@@ -12,30 +13,58 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const router = useRouter();
 
-  // Функция для регистрации (полностью в демо-режиме)
+  // Функция для регистрации с Magic Link
   const handleSignup = async () => {
     try {
       setLoading(true);
       setError(null);
       setSuccess(false);
 
-      // Всегда используем демо-режим для стабильности
-      console.log('🎭 ДЕМО-РЕЖИМ: Симуляция отправки Magic Link');
-      console.log('📧 Email:', email);
-      console.log('👤 Роль:', role);
-      
-      // Используем mock-клиент
-      await mockSupabaseClient.auth.signInWithOtp({
+      // Проверяем, настроен ли реальный Supabase
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const isDemo = supabaseUrl.includes('demo-project') ||
+        supabaseUrl.includes('your-project') ||
+        !supabaseUrl.startsWith('https://') ||
+        supabaseUrl.length < 30;
+
+      if (isDemo) {
+        // Демо-режим: используем mock-клиент
+        console.log('🎭 ДЕМО-РЕЖИМ: Симуляция отправки Magic Link');
+        console.log('📧 Email:', email);
+        console.log('👤 Роль:', role);
+
+        // Используем mock-клиент вместо реального API вызова
+        await mockSupabaseClient.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?role=${role}`,
+            data: { role: role },
+          },
+        });
+
+        // Имитируем задержку сети
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        setSuccess(true);
+        setError(null);
+        return;
+      }
+
+      // Реальный Supabase: отправляем Magic Link
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback?role=${role}`,
-          data: { role: role },
+          data: {
+            role: role,
+          },
         },
       });
-      
-      // Имитируем задержку сети
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
+      if (signInError) {
+        throw signInError;
+      }
+
       setSuccess(true);
       setError(null);
     } catch (err: unknown) {
@@ -90,9 +119,6 @@ export default function SignupPage() {
                   </a>{' '}
                   и обновите credentials в .env.local
                 </p>
-                <p className="mt-1">
-                  📖 <strong>Инструкция:</strong> см. файл SUPABASE_SETUP.md
-                </p>
               </div>
             </div>
           </div>
@@ -112,7 +138,7 @@ export default function SignupPage() {
                 autoComplete="email"
                 required
                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email адрес (например: test@example.com)"
+                placeholder="Email адрес"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -167,7 +193,7 @@ export default function SignupPage() {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               ) : null}
-              {loading ? 'Отправляем...' : 'Зарегистрироваться (демо)'}
+              {loading ? 'Отправляем...' : 'Зарегистрироваться с Magic Link'}
             </button>
           </div>
 
@@ -189,15 +215,12 @@ export default function SignupPage() {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-green-800">
-                    ✅ Регистрация выполнена! (демо)
+                    Magic Link отправлен! (демо)
                   </h3>
                   <div className="mt-2 text-sm text-green-700">
                     <p>
-                      <strong>Email:</strong> {email}<br/>
-                      <strong>Роль:</strong> {role === 'student' ? 'Студент' : 'Преподаватель'}
-                    </p>
-                    <p className="mt-2">
-                      В реальном режиме вы получили бы письмо с Magic Link для входа в систему.
+                      В демо-режиме: проверьте консоль браузера для подробностей.
+                      С реальным Supabase проект вы получили бы письмо с ссылкой для входа.
                     </p>
                   </div>
                 </div>

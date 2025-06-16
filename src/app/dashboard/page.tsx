@@ -56,7 +56,7 @@ export default function Dashboard() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Вы не авторизованы
           </h2>
-          <Link 
+          <Link
             href="/login"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
@@ -106,7 +106,7 @@ export default function Dashboard() {
                 Добро пожаловать, {profile.full_name || profile.email}!
               </h1>
               <p className="text-gray-600">
-                {profile.role === 'teacher' 
+                {profile.role === 'teacher'
                   ? 'Управляйте своими уроками и студентами через панель преподавателя.'
                   : 'Изучайте новые навыки и записывайтесь на уроки.'}
               </p>

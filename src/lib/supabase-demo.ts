@@ -37,7 +37,7 @@ export const mockSupabaseClient = {
         // Функция для демо-входа
         async demoSignIn(email: string) {
             console.log('🎭 ДЕМО: Вход в систему для', email);
-            
+
             const user = demoUsers[email];
             if (user) {
                 currentDemoUser = user;
@@ -46,11 +46,11 @@ export const mockSupabaseClient = {
                     user: user,
                     expires_at: Date.now() + 3600000 // 1 час
                 };
-                
+
                 console.log('✅ Пользователь вошел:', user);
                 return { user, session: currentDemoSession, error: null };
             }
-            
+
             return { user: null, session: null, error: { message: 'Пользователь не найден' } };
         }
     },
@@ -71,22 +71,22 @@ let currentDemoSession: any = null;
 
 // Демо пользователи
 const demoUsers: Record<string, UserProfile> = {
-  'teacher@example.com': {
-    id: 'demo-teacher-1',
-    email: 'teacher@example.com',
-    role: 'teacher',
-    full_name: 'Анна Преподавателева',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  'student@example.com': {
-    id: 'demo-student-1', 
-    email: 'student@example.com',
-    role: 'student',
-    full_name: 'Петр Студентов',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
+    'teacher@example.com': {
+        id: 'demo-teacher-1',
+        email: 'teacher@example.com',
+        role: 'teacher',
+        full_name: 'Анна Преподавателева',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    },
+    'student@example.com': {
+        id: 'demo-student-1',
+        email: 'student@example.com',
+        role: 'student',
+        full_name: 'Петр Студентов',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    }
 };
 
 // Типы для пользователей
@@ -101,13 +101,13 @@ export interface UserProfile {
 
 // Функции для работы с текущим пользователем
 export function getCurrentDemoUser(): UserProfile | null {
-  return currentDemoUser;
+    return currentDemoUser;
 }
 
 export function isDemoLoggedIn(): boolean {
-  return currentDemoUser !== null;
+    return currentDemoUser !== null;
 }
 
 export function getDemoUserRole(): 'student' | 'teacher' | null {
-  return currentDemoUser?.role || null;
+    return currentDemoUser?.role || null;
 }
