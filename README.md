@@ -1,135 +1,183 @@
-# Платформа уроков
+# Supabase CLI
 
-Полнофункциональная платформа для проведения онлайн уроков с использованием Next.js 15, Supabase и LiveKit.
+[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
+](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
 
-## 🚀 Технологии
+[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
 
-- **Next.js 15** с App Router и TypeScript
-- **Tailwind CSS v4** с дизайн-токенами
-- **Supabase** для аутентификации и базы данных
-- **LiveKit 1.9** для WebRTC видеосвязи
-- **pnpm** как пакетный менеджер
+This repository contains all the functionality for Supabase CLI.
 
-## 📋 Функции
+- [x] Running Supabase locally
+- [x] Managing database migrations
+- [x] Creating and deploying Supabase Functions
+- [x] Generating types directly from your database schema
+- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
 
-- ✅ Регистрация и аутентификация пользователей
-- ✅ Роли: студент/преподаватель
-- ✅ Passkey поддержка с Magic Link fallback
-- ✅ Дизайн-токены в /styles/design-tokens.css
-- ✅ Респонсивный дизайн с Tailwind CSS
-- 🚧 LiveKit интеграция для видео уроков (в разработке)
+## Getting started
 
-## 🛠 Настройка проекта
+### Install the CLI
 
-### 1. Установка зависимостей
+Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
 
-\`\`\`bash
-pnpm install
-\`\`\`
+```bash
+npm i supabase --save-dev
+```
 
-### 2. Настройка Supabase
+To install the beta release channel:
 
-1. Создайте проект в [Supabase](https://supabase.com)
-2. Выполните SQL из файла \`supabase/setup.sql\` в SQL Editor вашего проекта
-3. Скопируйте \`.env.example\` в \`.env.local\` и заполните переменные:
+```bash
+npm i supabase@beta --save-dev
+```
 
-\`\`\`env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-\`\`\`
+When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
 
-### 3. Настройка LiveKit (опционально)
+```
+NODE_OPTIONS=--no-experimental-fetch yarn add supabase
+```
 
-1. Зарегистрируйтесь в [LiveKit Cloud](https://livekit.io)
-2. Добавьте переменные в \`.env.local\`:
+> **Note**
+For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
 
-\`\`\`env
-NEXT_PUBLIC_LIVEKIT_URL=wss://your-livekit-url
-LIVEKIT_API_KEY=your_livekit_api_key
-LIVEKIT_API_SECRET=your_livekit_api_secret
-\`\`\`
+<details>
+  <summary><b>macOS</b></summary>
 
-### 4. Запуск проекта
+  Available via [Homebrew](https://brew.sh). To install:
 
-\`\`\`bash
-pnpm dev
-\`\`\`
+  ```sh
+  brew install supabase/tap/supabase
+  ```
 
-Откройте [http://localhost:3000](http://localhost:3000) в браузере.
+  To install the beta release channel:
+  
+  ```sh
+  brew install supabase/tap/supabase-beta
+  brew link --overwrite supabase-beta
+  ```
+  
+  To upgrade:
 
-## 📁 Структура проекта
+  ```sh
+  brew upgrade supabase
+  ```
+</details>
 
-\`\`\`
-src/
-├── app/                    # App Router страницы
-│   ├── auth/
-│   │   └── callback/      # Callback для аутентификации
-│   ├── dashboard/         # Главная страница после входа
-│   ├── signup/            # Страница регистрации
-│   ├── globals.css        # Глобальные стили
-│   └── page.tsx           # Главная страница (редирект)
-├── lib/
-│   └── supabase.ts        # Конфигурация Supabase
-styles/
-└── design-tokens.css      # Дизайн-токены
-supabase/
-└── setup.sql              # SQL для настройки БД
-\`\`\`
+<details>
+  <summary><b>Windows</b></summary>
 
-## 🎨 Дизайн-токены
+  Available via [Scoop](https://scoop.sh). To install:
 
-Все дизайн-токены определены в \`/styles/design-tokens.css\` и используются через CSS переменные:
+  ```powershell
+  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+  scoop install supabase
+  ```
 
-- **Цвета**: \`--color-primary\`, \`--color-success\`, etc.
-- **Типографика**: \`--font-size-*\`
-- **Отступы**: \`--spacing-*\`
-- **Радиусы**: \`--radius-*\`
-- **Тени**: \`--shadow-*\`
+  To upgrade:
 
-## 👥 Роли пользователей
+  ```powershell
+  scoop update supabase
+  ```
+</details>
 
-### Студент
-- Регистрация с ролью "студент"
-- Просмотр доступных уроков
-- Участие в уроках
+<details>
+  <summary><b>Linux</b></summary>
 
-### Преподаватель
-- Регистрация с ролью "преподаватель"
-- Создание и управление уроками
-- Проведение видео уроков
+  Available via [Homebrew](https://brew.sh) and Linux packages.
 
-## 🔐 Аутентификация
+  #### via Homebrew
 
-Используется Supabase Auth с поддержкой:
-- Magic Link (основной метод)
-- Email + OTP
-- Fallback для Passkey (готов к реализации)
+  To install:
 
-## 📝 Разработка
+  ```sh
+  brew install supabase/tap/supabase
+  ```
 
-### Команды
+  To upgrade:
 
-\`\`\`bash
-pnpm dev          # Запуск в режиме разработки
-pnpm build        # Сборка для продакшена
-pnpm start        # Запуск продакшен сборки
-pnpm lint         # Проверка линтером
-\`\`\`
+  ```sh
+  brew upgrade supabase
+  ```
 
-### Добавление новых токенов
+  #### via Linux packages
 
-1. Добавьте CSS переменную в \`styles/design-tokens.css\`
-2. Обновите \`tailwind.config.js\` для использования через \`@theme\`
-3. Импортируйте в \`globals.css\`
+  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
 
-## 🚀 Деплой
+  ```sh
+  sudo apk add --allow-untrusted <...>.apk
+  ```
 
-Проект готов к деплою на Vercel:
+  ```sh
+  sudo dpkg -i <...>.deb
+  ```
 
-1. Подключите GitHub репозиторий к Vercel
-2. Добавьте переменные окружения в настройках проекта
-3. Деплойте!
+  ```sh
+  sudo rpm -i <...>.rpm
+  ```
 
-## 📄 Лицензия
+  ```sh
+  sudo pacman -U <...>.pkg.tar.zst
+  ```
+</details>
 
-MIT
+<details>
+  <summary><b>Other Platforms</b></summary>
+
+  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+
+  ```sh
+  go install github.com/supabase/cli@latest
+  ```
+
+  Add a symlink to the binary in `$PATH` for easier access:
+
+  ```sh
+  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
+  ```
+
+  This works on other non-standard Linux distros.
+</details>
+
+<details>
+  <summary><b>Community Maintained Packages</b></summary>
+
+  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
+  To install in your working directory:
+
+  ```bash
+  pkgx install supabase
+  ```
+
+  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
+</details>
+
+### Run the CLI
+
+```bash
+supabase bootstrap
+```
+
+Or using npx:
+
+```bash
+npx supabase bootstrap
+```
+
+The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
+
+## Docs
+
+Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
+
+## Breaking changes
+
+We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
+
+However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
+
+## Developing
+
+To run from source:
+
+```sh
+# Go >= 1.22
+go run . help
+```
