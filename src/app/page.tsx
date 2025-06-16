@@ -1,22 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { mockSupabaseClient, getCurrentDemoUser, UserProfile } from '@/lib/supabase-demo';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User } from '@supabase/supabase-js';
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Проверяем авторизованного пользователя
+    // Проверяем авторизованного пользователя (демо-режим)
     const checkUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
+        const currentUser = getCurrentDemoUser();
+        setUser(currentUser);
       } catch (error) {
         console.error('Ошибка проверки пользователя:', error);
       } finally {
@@ -33,7 +32,7 @@ export default function Home() {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await mockSupabaseClient.auth.signOut();
       setUser(null);
     } catch (error) {
       console.error('Ошибка выхода:', error);
@@ -86,6 +85,12 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="flex items-center space-x-4">
+                  <Link
+                    href="/login"
+                    className="text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    Войти
+                  </Link>
                   <Link
                     href="/signup"
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
