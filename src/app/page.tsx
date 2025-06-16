@@ -1,16 +1,38 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { smartSupabaseClient, isDemoMode, getUserProfile, UserProfile } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import AuthModal from '@/components/AuthModal';
 
-export default function Home() {
+function HomeContent() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
+    // Проверяем ошибки авторизации из URL
+    const error = searchParams.get('error');
+    if (error) {
+      switch (error) {
+        case 'auth_error':
+          setAuthError('Ошибка авторизации. Попробуйте еще раз.');
+          break;
+        case 'unexpected_error':
+          setAuthError('Произошла неожиданная ошибка. Попробуйте еще раз.');
+          break;
+        default:
+          setAuthError('Произошла ошибка. Попробуйте еще раз.');
+      }
+      setAuthModalOpen(true);
+      // Очищаем URL от параметра ошибки
+      router.replace('/');
+    }
+
     // Проверяем авторизованного пользователя
     const checkUser = async () => {
       try {
@@ -24,7 +46,7 @@ export default function Home() {
     };
 
     checkUser();
-  }, []);
+  }, [searchParams, router]);
 
   const handleGoToDashboard = () => {
     router.push('/dashboard');
@@ -37,6 +59,19 @@ export default function Home() {
     } catch (error) {
       console.error('Ошибка выхода:', error);
     }
+  };
+
+  const handleAuthSuccess = () => {
+    // Обновляем состояние пользователя после успешной авторизации
+    const checkUser = async () => {
+      try {
+        const { data: userProfile } = await getUserProfile();
+        setUser(userProfile);
+      } catch (error) {
+        console.error('Ошибка проверки пользователя:', error);
+      }
+    };
+    checkUser();
   };
 
   if (loading) {
@@ -91,18 +126,18 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="flex items-center space-x-4">
-                  <Link
-                    href="/login"
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
                     className="text-gray-600 hover:text-gray-800 transition-colors"
                   >
                     Войти
-                  </Link>
-                  <Link
-                    href="/signup"
+                  </button>
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Начать обучение
-                  </Link>
+                  </button>
                 </div>
               )}
             </nav>
@@ -169,18 +204,18 @@ export default function Home() {
 
           {!user && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/signup"
+              <button
+                onClick={() => setAuthModalOpen(true)}
                 className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
               >
                 Зарегистрироваться
-              </Link>
-              <Link
-                href="/signup"
+              </button>
+              <button
+                onClick={() => setAuthModalOpen(true)}
                 className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors"
               >
                 Войти как преподаватель
-              </Link>
+              </button>
             </div>
           )}
         </div>
@@ -233,12 +268,12 @@ export default function Home() {
             <p className="text-xl text-blue-100 mb-6">
               Присоединяйтесь к тысячам студентов, которые уже изучают новые навыки на нашей платформе.
             </p>
-            <Link
-              href="/signup"
-              className="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors inline-block"
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
             >
               Начать бесплатно
-            </Link>
+            </button>
           </div>
         )}
       </main>
@@ -251,6 +286,29 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => {
+          setAuthModalOpen(false);
+          setAuthError(null);
+        }}
+        onSuccess={handleAuthSuccess}
+        initialError={authError}
+      />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

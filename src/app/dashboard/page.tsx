@@ -17,14 +17,14 @@ export default function Dashboard() {
 
         if (error || !userProfile) {
           console.error('Ошибка получения профиля:', error);
-          router.push('/login');
+          router.push('/');
           return;
         }
 
         setProfile(userProfile);
       } catch (error) {
         console.error('Ошибка получения профиля:', error);
-        router.push('/login');
+        router.push('/');
       } finally {
         setLoading(false);
       }
@@ -58,10 +58,10 @@ export default function Dashboard() {
             Вы не авторизованы
           </h2>
           <Link
-            href="/login"
+            href="/"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
-            Войти в систему
+            На главную
           </Link>
         </div>
       </div>

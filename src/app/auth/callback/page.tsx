@@ -16,7 +16,7 @@ function AuthCallbackComponent() {
 
         if (error) {
           console.error('Ошибка аутентификации:', error);
-          router.push('/signup?error=auth_error');
+          router.push('/?error=auth_error');
           return;
         }
 
@@ -39,11 +39,11 @@ function AuthCallbackComponent() {
           // Перенаправляем на главную страницу
           router.push('/dashboard');
         } else {
-          router.push('/signup');
+          router.push('/');
         }
       } catch (err) {
         console.error('Неожиданная ошибка:', err);
-        router.push('/signup?error=unexpected_error');
+        router.push('/?error=unexpected_error');
       }
     };
 
