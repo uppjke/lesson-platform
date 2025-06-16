@@ -57,12 +57,16 @@ const config = {
         lg: "var(--radius-lg)",
         xl: "var(--radius-xl)",
         "2xl": "var(--radius-2xl)",
+        "3xl": "var(--radius-3xl)",
+        DEFAULT: "var(--radius-default)", // Универсальное скругление
+        floating: "var(--radius-floating)",
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
         xl: "var(--shadow-xl)",
+        floating: "var(--shadow-floating)",
       },
     },
   },

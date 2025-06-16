@@ -45,15 +45,19 @@
   --spacing-16: 4rem;
   
   /* Радиусы */
-  --radius-sm: 0.125rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
+  --radius-sm: 2rem;
+  --radius-md: 2rem;
+  --radius-lg: 2rem;
   --radius-xl: 0.75rem;
   --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-default: 2rem; /* Универсальное скругление для всех элементов */
+  --radius-floating: 1.25rem; /* Более умеренное скругление */
   
   /* Тени */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-floating: 0 8px 32px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.06); /* Современная мягкая тень */
 }
