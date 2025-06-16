@@ -54,7 +54,7 @@ export default function Dashboard() {
 
         // Загружаем статистику в зависимости от роли
         const statsData = await getDashboardStats(user.id, userProfile.role);
-        if (!statsData.error) {
+        if (statsData) {
           setStats(statsData);
         }
       } catch (error) {

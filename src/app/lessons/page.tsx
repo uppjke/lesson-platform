@@ -10,7 +10,6 @@ export default function LessonsPage() {
     const { user, loading: authLoading } = useAuth();
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
     const [enrolling, setEnrolling] = useState<string | null>(null);
     const router = useRouter();
 
@@ -64,9 +63,8 @@ export default function LessonsPage() {
         }
     };
 
-    const filteredLessons = filter === 'all'
-        ? lessons
-        : lessons.filter(lesson => lesson.level === filter);
+    // Отображаем все уроки (фильтрация по уровню убрана)
+    const filteredLessons = lessons;
 
     if (authLoading || loading) {
         return (
@@ -113,43 +111,14 @@ export default function LessonsPage() {
                     </p>
                 </div>
 
-                {/* Filters */}
-                <div className="mb-8">
-                    <div className="flex flex-wrap gap-2">
-                        {[
-                            { key: 'all', label: 'Все уровни' },
-                            { key: 'beginner', label: 'Начинающий' },
-                            { key: 'intermediate', label: 'Средний' },
-                            { key: 'advanced', label: 'Продвинутый' }
-                        ].map(({ key, label }) => (
-                            <button
-                                key={key}
-                                onClick={() => setFilter(key as 'all' | 'beginner' | 'intermediate' | 'advanced')}
-                                className={`px-4 py-2 rounded-lg transition-colors ${
-                                    filter === key
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                                }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
                 {/* Lessons Grid */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredLessons.map((lesson) => (
                         <div key={lesson.id} className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                                        lesson.level === 'beginner' ? 'bg-green-100 text-green-800' :
-                                        lesson.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-red-100 text-red-800'
-                                    }`}>
-                                        {lesson.level === 'beginner' ? 'Начинающий' :
-                                         lesson.level === 'intermediate' ? 'Средний' : 'Продвинутый'}
+                                    <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        Урок
                                     </span>
                                 </div>
                                 <span className="text-sm text-gray-500">
@@ -169,16 +138,6 @@ export default function LessonsPage() {
                                 <p className="text-sm text-gray-500 mb-2">
                                     Преподаватель: {lesson.profiles?.full_name || 'Неизвестный преподаватель'}
                                 </p>
-                                
-                                {lesson.subjects && lesson.subjects.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                        {lesson.subjects.map((subject, index) => (
-                                            <span key={index} className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                                {subject}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
 
                             <div className="flex justify-between items-center">
