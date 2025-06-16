@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
-import { smartSupabaseClient, isDemoMode } from '@/lib/auth-client';
+import { useState, useEffect } from 'react';
+import { supabase, checkEmailExists } from '@/lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -39,60 +39,116 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialError }: 
       setError(null);
       setSuccess(false);
 
-      if (isDemoMode()) {
-        console.log(`🎭 ДЕМО-РЕЖИМ: ${mode === 'login' ? 'Вход' : 'Регистрация'}`);
-        console.log('📧 Email:', email);
-        if (mode === 'signup') {
-          console.log('👤 Роль:', role);
-          console.log('📝 Имя:', fullName);
-        }
-
-        // В демо-режиме используем специальную функцию для входа
-        if (mode === 'login') {
-          const result = await smartSupabaseClient.auth.demoSignIn(email);
-          if (result.error) {
-            throw new Error(result.error.message);
-          }
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setSuccess(true);
-        
-        setTimeout(() => {
-          onSuccess?.();
-          onClose();
-          // Перезагружаем страницу чтобы обновить состояние пользователя
-          window.location.reload();
-        }, 1500);
-      } else {
-        console.log('🚀 PRODUCTION: Реальная авторизация');
-        
-        const options = mode === 'signup' ? {
-          emailRedirectTo: `${window.location.origin}/auth/callback?role=${role}`,
-          data: {
-            role: role,
-            full_name: fullName,
-          },
-        } : {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        };
-
-        const { error: authError } = await smartSupabaseClient.auth.signInWithOtp({
-          email,
-          options,
-        });
-
-        if (authError) {
-          throw authError;
-        }
-
-        setSuccess(true);
+      // Проверяем, настроен ли Supabase
+      if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project-id') || 
+          process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('demo.supabase.co') ||
+          process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('demo-ui-test')) {
+        throw new Error('Supabase не настроен. Пожалуйста, обновите переменные окружения в .env.local с реальными credentials из вашего Supabase проекта.');
       }
 
+      // Проверяем подключение к Supabase
+      console.log('🔍 Testing Supabase connection...');
+      const { error: healthError } = await supabase.from('profiles').select('count').limit(1).maybeSingle();
+      
+      if (healthError) {
+        console.error('❌ Supabase health check failed:', healthError);
+        if (healthError.message.includes('relation "public.profiles" does not exist')) {
+          throw new Error('База данных не настроена. Пожалуйста, примените SQL схему в Supabase Dashboard → SQL Editor. См. SUPABASE_AUTH_FIX.md');
+        }
+      } else {
+        console.log('✅ Supabase connection OK');
+      }
+
+      // Проверяем существование пользователя
+      console.log(`🔐 Attempting ${mode} for:`, email);
+      
+      const { exists, isConfirmed } = await checkEmailExists(email);
+      
+      if (mode === 'signup' && exists) {
+        if (isConfirmed) {
+          throw new Error(`Пользователь с email ${email} уже зарегистрирован и подтвержден. Попробуйте войти.`);
+        } else {
+          throw new Error(`Пользователь с email ${email} уже зарегистрирован, но не подтвержден. Проверьте почту или попробуйте войти.`);
+        }
+      }
+      
+      if (mode === 'login' && !exists) {
+        throw new Error(`Пользователь с email ${email} не найден. Попробуйте зарегистрироваться.`);
+      }
+
+      console.log('🌐 Redirect URL:', `${window.location.origin}/auth/callback`);
+
+      // Отправляем Magic Link
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: mode === 'signup' ? {
+            role: role,
+            full_name: fullName,
+          } : undefined,
+        },
+      });
+
+      if (authError) {
+        console.error('❌ Auth error:', authError);
+        
+        // Обрабатываем специфичные ошибки аутентификации
+        if (authError.message.includes('User already registered')) {
+          throw new Error(`Пользователь с email ${email} уже зарегистрирован. Попробуйте войти вместо регистрации.`);
+        }
+        
+        throw authError;
+      }
+
+      console.log('✅ Magic link sent successfully');
+      setSuccess(true);
+      
+      // Автоматически закрываем через 3 секунды
+      setTimeout(() => {
+        onSuccess?.();
+        onClose();
+      }, 3000);
+
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Произошла ошибка';
+      console.error('❌ Full error:', err);
+      let errorMessage = 'Произошла ошибка';
+      let shouldSwitchMode = false;
+      
+      if (err instanceof Error) {
+        // Обрабатываем специфичные ошибки Supabase
+        if (err.message.includes('уже зарегистрирован')) {
+          errorMessage = err.message;
+          shouldSwitchMode = true; // Предлагаем переключиться на вход
+        } else if (err.message.includes('fetch')) {
+          errorMessage = 'Ошибка сети. Проверьте подключение к интернету и настройки Supabase.';
+        } else if (err.message.includes('Invalid login credentials')) {
+          errorMessage = 'Пользователь не найден. Попробуйте зарегистрироваться.';
+          if (mode === 'login') shouldSwitchMode = true; // Предлагаем переключиться на регистрацию
+        } else if (err.message.includes('Email not confirmed')) {
+          errorMessage = 'Email не подтвержден. Проверьте почту и перейдите по ссылке.';
+        } else if (err.message.includes('CORS')) {
+          errorMessage = 'Ошибка CORS. Проверьте Redirect URLs в Supabase Dashboard.';
+        } else if (err.message.includes('relation') && err.message.includes('does not exist')) {
+          errorMessage = 'База данных не настроена. См. инструкции в SUPABASE_AUTH_FIX.md';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       setSuccess(false);
+      
+      // Показываем кнопку для переключения режима
+      if (shouldSwitchMode) {
+        setTimeout(() => {
+          const newMode = mode === 'signup' ? 'login' : 'signup';
+          const actionText = newMode === 'login' ? 'войти' : 'зарегистрироваться';
+          if (confirm(`Хотите ${actionText} вместо этого?`)) {
+            switchMode(newMode);
+          }
+        }, 2000);
+      }
     } finally {
       setLoading(false);
     }
@@ -155,39 +211,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialError }: 
             </button>
           </div>
 
-          {/* Статус режима */}
-          {isDemoMode() ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-4 w-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-2">
-                  <p className="text-sm text-blue-700">
-                    🎭 Демо-режим. {mode === 'login' ? 'Попробуйте teacher@example.com' : 'Введите любой email'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-2">
-                  <p className="text-sm text-green-700">
-                    🚀 Production режим. Magic Link будет отправлен на email.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
@@ -201,39 +224,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialError }: 
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder={isDemoMode() && mode === 'login' ? "teacher@example.com" : "your@email.com"}
+                placeholder="your@email.com"
               />
             </div>
-
-            {/* Быстрый вход (только для демо и входа) */}
-            {isDemoMode() && mode === 'login' && (
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">Быстрый вход:</p>
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setEmail('teacher@example.com')}
-                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                  >
-                    👨‍🏫 Преподаватель
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEmail('student@example.com')}
-                    className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
-                  >
-                    👨‍🎓 Студент
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Дополнительные поля для регистрации */}
             {mode === 'signup' && (
               <>
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Полное имя {isDemoMode() && <span className="text-gray-400">(опционально)</span>}
+                    Полное имя (опционально)
                   </label>
                   <input
                     id="fullName"
@@ -285,14 +285,42 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialError }: 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm">
                 {error}
+                {error.includes('уже зарегистрирован') && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => switchMode('login')}
+                      className="text-blue-600 hover:text-blue-800 underline text-sm"
+                    >
+                      Перейти к входу →
+                    </button>
+                  </div>
+                )}
+                {error.includes('не найден') && mode === 'login' && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => switchMode('signup')}
+                      className="text-blue-600 hover:text-blue-800 underline text-sm"
+                    >
+                      Зарегистрироваться →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
             {success && (
               <div className="bg-green-50 border border-green-200 text-green-600 px-3 py-2 rounded-md text-sm">
-                ✅ {isDemoMode() 
-                  ? (mode === 'login' ? 'Входим в систему...' : 'Регистрация завершена!')
-                  : 'Magic Link отправлен на ваш email!'}
+                ✅ Magic Link отправлен на ваш email! Проверьте почту и перейдите по ссылке.
+              </div>
+            )}
+
+            {/* Информация о Magic Link */}
+            {!error && !success && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-md text-sm">
+                💡 {mode === 'login' 
+                  ? 'Введите email для получения ссылки входа'
+                  : 'После регистрации на email придет ссылка для подтверждения'
+                }
               </div>
             )}
 
@@ -306,15 +334,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialError }: 
                 <span className="flex items-center justify-center">
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 14 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {isDemoMode() ? 'Подключаемся...' : 'Отправляем...'}
+                  Отправляем...
                 </span>
               ) : (
-                <>
-                  {mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
-                  {isDemoMode() && ' (демо)'}
-                </>
+                mode === 'login' ? 'Войти' : 'Зарегистрироваться'
               )}
             </button>
           </form>

@@ -1,71 +1,80 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase, getUserProfile, UserProfile } from '@/lib/supabase';
+import { getPublishedLessons, enrollInLesson, Lesson } from '@/lib/supabase';
+import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
-import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 
-interface Lesson {
-    id: string;
-    title: string;
-    description: string;
-    teacher_id: string;
-    teacher_name: string;
-    duration: number;
-    level: 'beginner' | 'intermediate' | 'advanced';
-    subjects: string[];
-    created_at: string;
-}
-
 export default function LessonsPage() {
-    const [user, setUser] = useState<User | null>(null);
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const { user, loading: authLoading } = useAuth();
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
+    const [enrolling, setEnrolling] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
-        const checkAuth = async () => {
+        const loadData = async () => {
+            if (!user) {
+                router.push('/');
+                return;
+            }
+
             try {
-                const { data: { user }, error } = await supabase.auth.getUser();
-
-                if (error || !user) {
-                    router.push('/');
-                    return;
+                // Загружаем уроки из Supabase
+                const { data: lessonsData, error: lessonsError } = await getPublishedLessons();
+                
+                if (lessonsError) {
+                    console.error('Ошибка загрузки уроков:', lessonsError);
+                    setLessons([]);
+                } else {
+                    setLessons(lessonsData || []);
                 }
-
-                setUser(user);
-
-                const { data: profileData } = await getUserProfile(user.id);
-                setProfile(profileData);
-
-                // Загружаем уроки (временно используем mock данные)
-                setLessons(mockLessons);
             } catch (error) {
                 console.error('Ошибка:', error);
+                setLessons([]);
             } finally {
                 setLoading(false);
             }
         };
 
-        checkAuth();
-    }, [router]);
+        if (!authLoading) {
+            loadData();
+        }
+    }, [user, authLoading, router]);
 
-    const handleSignOut = async () => {
-        await supabase.auth.signOut();
-        router.push('/');
+    const handleEnroll = async (lessonId: string) => {
+        if (!user) return;
+        
+        setEnrolling(lessonId);
+        try {
+            const { error } = await enrollInLesson(lessonId, user.id);
+            if (error) {
+                console.error('Ошибка записи на урок:', error);
+                alert('Ошибка записи на урок: ' + error.message);
+            } else {
+                alert('Вы успешно записались на урок!');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при записи на урок');
+        } finally {
+            setEnrolling(null);
+        }
     };
 
     const filteredLessons = filter === 'all'
         ? lessons
         : lessons.filter(lesson => lesson.level === filter);
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Загрузка уроков...</p>
+                </div>
             </div>
         );
     }
@@ -76,84 +85,55 @@ export default function LessonsPage() {
             <header className="bg-white shadow-sm border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center space-x-8">
-                            <Link href="/" className="text-2xl font-bold text-gray-900">
+                        <div className="flex items-center">
+                            <Link href="/dashboard" className="text-2xl font-bold text-gray-900 hover:text-blue-600">
                                 📚 LessonPlatform
                             </Link>
-                            <nav className="hidden md:flex space-x-8">
-                                <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                                    Панель управления
-                                </Link>
-                                <Link href="/lessons" className="text-blue-600 font-medium">
-                                    Уроки
-                                </Link>
-                            </nav>
                         </div>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-sm text-gray-600">
-                                {user?.email} ({profile?.role === 'teacher' ? 'Преподаватель' : 'Студент'})
-                            </span>
-                            <button
-                                onClick={handleSignOut}
-                                className="text-gray-600 hover:text-gray-800 transition-colors"
-                            >
-                                Выйти
-                            </button>
-                        </div>
+                        <nav className="flex items-center space-x-6">
+                            <Link href="/dashboard" className="text-gray-600 hover:text-gray-800">
+                                Dashboard
+                            </Link>
+                            <Link href="/lessons" className="text-blue-600 font-medium">
+                                Уроки
+                            </Link>
+                        </nav>
                     </div>
                 </div>
             </header>
 
+            {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Page Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                         Доступные уроки
                     </h1>
                     <p className="text-gray-600">
-                        Найдите подходящий урок и начните обучение уже сегодня
+                        Выберите урок для изучения новых навыков
                     </p>
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6">
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setFilter('all')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                <div className="mb-8">
+                    <div className="flex flex-wrap gap-2">
+                        {[
+                            { key: 'all', label: 'Все уровни' },
+                            { key: 'beginner', label: 'Начинающий' },
+                            { key: 'intermediate', label: 'Средний' },
+                            { key: 'advanced', label: 'Продвинутый' }
+                        ].map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => setFilter(key as 'all' | 'beginner' | 'intermediate' | 'advanced')}
+                                className={`px-4 py-2 rounded-lg transition-colors ${
+                                    filter === key
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                                 }`}
-                        >
-                            Все уроки
-                        </button>
-                        <button
-                            onClick={() => setFilter('beginner')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${filter === 'beginner'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                                }`}
-                        >
-                            Начинающий
-                        </button>
-                        <button
-                            onClick={() => setFilter('intermediate')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${filter === 'intermediate'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                                }`}
-                        >
-                            Средний
-                        </button>
-                        <button
-                            onClick={() => setFilter('advanced')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${filter === 'advanced'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                                }`}
-                        >
-                            Продвинутый
-                        </button>
+                            >
+                                {label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -162,40 +142,58 @@ export default function LessonsPage() {
                     {filteredLessons.map((lesson) => (
                         <div key={lesson.id} className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow">
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-xl font-semibold text-gray-900">
-                                    {lesson.title}
-                                </h3>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${lesson.level === 'beginner'
-                                        ? 'bg-green-100 text-green-800'
-                                        : lesson.level === 'intermediate'
-                                            ? 'bg-yellow-100 text-yellow-800'
-                                            : 'bg-red-100 text-red-800'
+                                <div>
+                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                                        lesson.level === 'beginner' ? 'bg-green-100 text-green-800' :
+                                        lesson.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-red-100 text-red-800'
                                     }`}>
-                                    {lesson.level === 'beginner' ? 'Начинающий' :
-                                        lesson.level === 'intermediate' ? 'Средний' : 'Продвинутый'}
+                                        {lesson.level === 'beginner' ? 'Начинающий' :
+                                         lesson.level === 'intermediate' ? 'Средний' : 'Продвинутый'}
+                                    </span>
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                    {lesson.duration} мин
                                 </span>
                             </div>
 
-                            <p className="text-gray-600 mb-4">
+                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                {lesson.title}
+                            </h3>
+
+                            <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                                 {lesson.description}
                             </p>
 
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {lesson.subjects.map((subject, index) => (
-                                    <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded">
-                                        {subject}
-                                    </span>
-                                ))}
+                            <div className="mb-4">
+                                <p className="text-sm text-gray-500 mb-2">
+                                    Преподаватель: {lesson.profiles?.full_name || 'Неизвестный преподаватель'}
+                                </p>
+                                
+                                {lesson.subjects && lesson.subjects.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                        {lesson.subjects.map((subject, index) => (
+                                            <span key={index} className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                                {subject}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                                <span>Преподаватель: {lesson.teacher_name}</span>
-                                <span>Длительность: {lesson.duration} мин</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-lg font-bold text-green-600">
+                                    {lesson.price > 0 ? `${lesson.price}₽` : 'Бесплатно'}
+                                </span>
+                                
+                                <button
+                                    onClick={() => handleEnroll(lesson.id)}
+                                    disabled={enrolling === lesson.id}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {enrolling === lesson.id ? 'Записываем...' : 'Записаться'}
+                                </button>
                             </div>
-
-                            <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-                                Записаться на урок
-                            </button>
                         </div>
                     ))}
                 </div>
@@ -203,7 +201,13 @@ export default function LessonsPage() {
                 {filteredLessons.length === 0 && (
                     <div className="text-center py-12">
                         <p className="text-gray-500 text-lg">
-                            Уроки данного уровня пока не найдены
+                            {loading ? 'Загрузка уроков...' : 'Уроки не найдены'}
+                        </p>
+                        <p className="text-gray-400 text-sm mt-2">
+                            {lessons.length === 0 ? 
+                                'Преподаватели еще не создали уроки или база данных не настроена' :
+                                'Попробуйте изменить фильтр уровня сложности'
+                            }
                         </p>
                     </div>
                 )}
@@ -211,73 +215,3 @@ export default function LessonsPage() {
         </div>
     );
 }
-
-// Mock данные для демонстрации
-const mockLessons: Lesson[] = [
-    {
-        id: '1',
-        title: 'Введение в JavaScript',
-        description: 'Изучите основы JavaScript с нуля. Переменные, функции, условия и циклы.',
-        teacher_id: '1',
-        teacher_name: 'Анна Смирнова',
-        duration: 60,
-        level: 'beginner',
-        subjects: ['JavaScript', 'Программирование'],
-        created_at: '2024-01-15'
-    },
-    {
-        id: '2',
-        title: 'React Hooks на практике',
-        description: 'Глубокое изучение React Hooks: useState, useEffect, useContext и создание собственных хуков.',
-        teacher_id: '2',
-        teacher_name: 'Максим Петров',
-        duration: 90,
-        level: 'intermediate',
-        subjects: ['React', 'Frontend'],
-        created_at: '2024-01-16'
-    },
-    {
-        id: '3',
-        title: 'Архитектура микросервисов',
-        description: 'Проектирование и реализация микросервисной архитектуры с использованием современных технологий.',
-        teacher_id: '3',
-        teacher_name: 'Дмитрий Козлов',
-        duration: 120,
-        level: 'advanced',
-        subjects: ['Архитектура', 'Backend'],
-        created_at: '2024-01-17'
-    },
-    {
-        id: '4',
-        title: 'HTML и CSS для начинающих',
-        description: 'Основы веб-разработки: HTML разметка, CSS стили, Flexbox и Grid.',
-        teacher_id: '4',
-        teacher_name: 'Елена Иванова',
-        duration: 75,
-        level: 'beginner',
-        subjects: ['HTML', 'CSS', 'Frontend'],
-        created_at: '2024-01-18'
-    },
-    {
-        id: '5',
-        title: 'TypeScript в больших проектах',
-        description: 'Использование TypeScript для создания масштабируемых приложений. Типы, интерфейсы, декораторы.',
-        teacher_id: '5',
-        teacher_name: 'Сергей Волков',
-        duration: 100,
-        level: 'intermediate',
-        subjects: ['TypeScript', 'JavaScript'],
-        created_at: '2024-01-19'
-    },
-    {
-        id: '6',
-        title: 'Machine Learning с Python',
-        description: 'Введение в машинное обучение. Pandas, NumPy, Scikit-learn на практических примерах.',
-        teacher_id: '6',
-        teacher_name: 'Ольга Федорова',
-        duration: 150,
-        level: 'advanced',
-        subjects: ['Python', 'ML', 'Data Science'],
-        created_at: '2024-01-20'
-    }
-];

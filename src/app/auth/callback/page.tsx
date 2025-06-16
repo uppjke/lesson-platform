@@ -21,14 +21,16 @@ function AuthCallbackComponent() {
         }
 
         if (user) {
-          // Получаем роль из параметров URL
-          const role = searchParams.get('role') as 'student' | 'teacher' || 'student';
+          // Получаем данные из metadata (если это регистрация)
+          const role = user.user_metadata?.role || 'student';
+          const fullName = user.user_metadata?.full_name || '';
 
           // Пытаемся создать профиль пользователя (если он еще не существует)
           const { error: profileError } = await createUserProfile(
             user.id,
             user.email || '',
-            role
+            role,
+            fullName
           );
 
           // Игнорируем ошибку, если профиль уже существует
