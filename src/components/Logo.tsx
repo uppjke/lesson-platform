@@ -20,7 +20,7 @@ export default function Logo({ className = '', size = 'md' }: LogoProps) {
         <g transform="scale(0.06103515625 0.06103515625) translate(2048.0 2048.0)">
           <path 
             d="M530.211,1427.3 C1018.88,1427.3 1416.3,1029.88 1416.3,541.211 L1416.3,-589.211 C1416.3,-1077.88 1018.88,-1475.3 530.211,-1475.3 L-600.211,-1475.3 C-1088.88,-1475.3 -1486.3,-1077.88 -1486.3,-589.211 L-1486.3,541.211 C-1486.3,1029.88 -1088.88,1427.3 -600.211,1427.3 L530.211,1427.3 Z" 
-            fill="currentColor" 
+            fill="#000000" 
           />
           <path 
             d="M-1.7053e-13,-461.901 L-1.7053e-13,-923.803 L-923.803,2.84217e-13 L-461.901,2.84217e-13 L-1.7053e-13,-461.901 Z" 
@@ -36,7 +36,7 @@ export default function Logo({ className = '', size = 'md' }: LogoProps) {
           />
         </g>
       </svg>
-      <span className={`font-bold ${
+      <span className={`font-bold text-gray-900 ${
         size === 'sm' ? 'text-lg' : 
         size === 'md' ? 'text-2xl' : 'text-3xl'
       }`}>

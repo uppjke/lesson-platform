@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Изучатор - Современная платформа для онлайн-обучения",
   description: "Изучайте новые навыки с помощью интерактивных уроков, видеозвонков с преподавателями и персонализированных программ обучения.",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -31,7 +34,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <Header />
-          <main className="min-h-screen">
+          <main>
             {children}
           </main>
         </AuthProvider>
