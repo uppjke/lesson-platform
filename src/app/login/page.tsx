@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { mockSupabaseClient } from '@/lib/supabase-demo';
+import { smartSupabaseClient, isDemoMode } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -12,33 +12,43 @@ export default function LoginPage() {
     const [success, setSuccess] = useState(false);
     const router = useRouter();
 
-    // Функция для входа через Magic Link (демо)
+    // Функция для входа через Magic Link
     const handleLogin = async () => {
         try {
             setLoading(true);
             setError(null);
             setSuccess(false);
 
-            console.log('🎭 ДЕМО-РЕЖИМ: Симуляция входа через Magic Link');
-            console.log('📧 Email:', email);
+            if (isDemoMode()) {
+                console.log('🎭 ДЕМО-РЕЖИМ: Симуляция входа через Magic Link');
+                console.log('📧 Email:', email);
 
-            // В демо-режиме сразу "логиним" пользователя
-            const result = await mockSupabaseClient.auth.demoSignIn(email);
+                // В демо-режиме используем специальную функцию
+                const result = await smartSupabaseClient.auth.demoSignIn(email);
 
-            if (result.error) {
-                throw new Error(result.error.message);
+                if (result.error) {
+                    throw new Error(result.error.message);
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                setSuccess(true);
+                setTimeout(() => router.push('/dashboard'), 2000);
+            } else {
+                console.log('🚀 PRODUCTION: Отправка реального Magic Link');
+
+                const { error: signInError } = await smartSupabaseClient.auth.signInWithOtp({
+                    email,
+                    options: {
+                        emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    },
+                });
+
+                if (signInError) {
+                    throw signInError;
+                }
+
+                setSuccess(true);
             }
-
-            // Имитируем задержку сети
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            setSuccess(true);
-            setError(null);
-
-            // Переходим в dashboard
-            setTimeout(() => {
-                router.push('/dashboard');
-            }, 2000);
 
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Произошла ошибка при входе';
@@ -72,27 +82,52 @@ export default function LoginPage() {
                     </p>
                 </div>
 
-                {/* Статус демо-режима */}
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                    <div className="flex">
-                        <div className="flex-shrink-0">
-                            <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="ml-3">
-                            <h3 className="text-sm font-medium text-blue-800">
-                                Демо-режим входа
-                            </h3>
-                            <div className="mt-2 text-sm text-blue-700">
-                                <p>
-                                    Введите любой email для демонстрации входа в систему.
-                                    После "входа" вы будете перенаправлены в Dashboard.
-                                </p>
+                {/* Статус режима */}
+                {isDemoMode() ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-sm font-medium text-blue-800">
+                                    Демо-режим входа
+                                </h3>
+                                <div className="mt-2 text-sm text-blue-700">
+                                    <p>
+                                        Введите любой email для демонстрации входа в систему.
+                                        Для production режима настройте Supabase.
+                                    </p>
+                                    <p className="mt-1">
+                                        📖 <strong>Инструкция:</strong> PRODUCTION_SETUP.md
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-sm font-medium text-green-800">
+                                    🚀 Production режим
+                                </h3>
+                                <div className="mt-2 text-sm text-green-700">
+                                    <p>
+                                        Подключение к реальному Supabase. Magic Link будет отправлен на ваш email.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     {/* Email поле */}
@@ -108,33 +143,35 @@ export default function LoginPage() {
                                 autoComplete="email"
                                 required
                                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                                placeholder="Email адрес (например: teacher@example.com)"
+                                placeholder={isDemoMode() ? "Email адрес (например: teacher@example.com)" : "Ваш email адрес"}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    {/* Быстрые демо-аккаунты */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Быстрый вход (демо):</h4>
-                        <div className="space-y-2">
-                            <button
-                                type="button"
-                                onClick={() => setEmail('teacher@example.com')}
-                                className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-200 rounded hover:bg-gray-50"
-                            >
-                                👨‍🏫 teacher@example.com (Преподаватель)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setEmail('student@example.com')}
-                                className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-200 rounded hover:bg-gray-50"
-                            >
-                                👨‍🎓 student@example.com (Студент)
-                            </button>
+                    {/* Быстрые демо-аккаунты (только для демо) */}
+                    {isDemoMode() && (
+                        <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Быстрый вход (демо):</h4>
+                            <div className="space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setEmail('teacher@example.com')}
+                                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-200 rounded hover:bg-gray-50"
+                                >
+                                    👨‍🏫 teacher@example.com (Преподаватель)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setEmail('student@example.com')}
+                                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-200 rounded hover:bg-gray-50"
+                                >
+                                    👨‍🎓 student@example.com (Студент)
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Кнопка входа */}
                     <div>
@@ -149,7 +186,8 @@ export default function LoginPage() {
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                             ) : null}
-                            {loading ? 'Отправляем Magic Link...' : 'Войти через Magic Link'}
+                            {loading ? 'Отправляем Magic Link...' :
+                                isDemoMode() ? 'Войти (демо)' : 'Войти через Magic Link'}
                         </button>
                     </div>
 
@@ -171,11 +209,13 @@ export default function LoginPage() {
                                 </div>
                                 <div className="ml-3">
                                     <h3 className="text-sm font-medium text-green-800">
-                                        ✅ Вход выполняется! (демо)
+                                        ✅ {isDemoMode() ? 'Вход выполняется! (демо)' : 'Magic Link отправлен!'}
                                     </h3>
                                     <div className="mt-2 text-sm text-green-700">
                                         <p>
-                                            Переходим в Dashboard... В реальном режиме вы получили бы письмо с ссылкой.
+                                            {isDemoMode()
+                                                ? 'Переходим в Dashboard... В реальном режиме вы получили бы письмо с ссылкой.'
+                                                : 'Проверьте вашу почту и перейдите по ссылке для входа в систему.'}
                                         </p>
                                     </div>
                                 </div>

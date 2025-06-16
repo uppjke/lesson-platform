@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { mockSupabaseClient, getCurrentDemoUser, UserProfile } from '@/lib/supabase-demo';
+import { smartSupabaseClient, isDemoMode, getUserProfile, UserProfile } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -11,11 +11,11 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Проверяем авторизованного пользователя (демо-режим)
+    // Проверяем авторизованного пользователя
     const checkUser = async () => {
       try {
-        const currentUser = getCurrentDemoUser();
-        setUser(currentUser);
+        const { data: userProfile } = await getUserProfile();
+        setUser(userProfile);
       } catch (error) {
         console.error('Ошибка проверки пользователя:', error);
       } finally {
@@ -32,7 +32,7 @@ export default function Home() {
 
   const handleSignOut = async () => {
     try {
-      await mockSupabaseClient.auth.signOut();
+      await smartSupabaseClient.auth.signOut();
       setUser(null);
     } catch (error) {
       console.error('Ошибка выхода:', error);
@@ -57,6 +57,12 @@ export default function Home() {
               <h1 className="text-2xl font-bold text-gray-900">
                 📚 LessonPlatform
               </h1>
+              {/* Индикатор режима */}
+              {isDemoMode() && (
+                <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  🎭 Demo
+                </span>
+              )}
             </div>
             <nav className="flex items-center space-x-4">
               {user ? (
@@ -106,6 +112,50 @@ export default function Home() {
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Статус режима */}
+        {isDemoMode() ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-12">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-blue-800">
+                  🎭 Демонстрационный режим
+                </h3>
+                <div className="mt-2 text-blue-700">
+                  <p>
+                    Платформа работает в демо-режиме. Вы можете полноценно протестировать все функции!
+                    Для запуска в production следуйте инструкции в <strong>PRODUCTION_SETUP.md</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-12">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-green-800">
+                  🚀 Production режим активен
+                </h3>
+                <div className="mt-2 text-green-700">
+                  <p>
+                    Платформа работает в production режиме с реальным Supabase.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
             Современная платформа

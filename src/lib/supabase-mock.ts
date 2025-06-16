@@ -32,7 +32,7 @@ export interface UserProfile {
 
 // Mock функция для демонстрации (если нет реального Supabase)
 export const mockAuth = {
-    async signInWithOtp(options: { email: string; options?: any }) {
+    async signInWithOtp(options: { email: string; options?: Record<string, unknown> }) {
         if (!isRealSupabase) {
             // Симулируем успешную отправку OTP
             return {
@@ -57,7 +57,7 @@ export const mockAuth = {
 // Функция для проверки подключения к Supabase
 export async function testSupabaseConnection() {
     try {
-        const { data, error } = await supabase.from('profiles').select('count').limit(1);
+        const { error } = await supabase.from('profiles').select('count').limit(1);
         return { connected: !error, error };
     } catch (error) {
         return { connected: false, error };
